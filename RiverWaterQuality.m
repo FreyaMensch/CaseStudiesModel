@@ -3,6 +3,11 @@
 % by Veronica, Alireza and Freya
 % last updated on 27.10.18 at 19:00 by Freya
 
+%% To avoid conflicts: Who is working on which part?
+% Temperature model: Freya
+% Oxygen model: Veronica
+
+
 
 % TEST 2 and 3
 % last try
