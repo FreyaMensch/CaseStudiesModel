@@ -3,9 +3,16 @@
 % by Veronica, Alireza and Freya
 % last updated on 27.10.18 at 19:00 by Freya
 
+%% To avoid conflicts: Who is working on which part?
+% Temperature model: Freya
+% Oxygen model: Veronica
+
+
 
 % TEST 2 and 3
 % last try
+% test ali
+%test2 ali
 
 %% FLOW BALANCE
 %% Flow Balance
@@ -45,7 +52,7 @@ E_p = 0.011*((U_i^2*B_i^2)/(H_i^2*Us_i^2));         % Fischer et al 1979; Manual
 %% Solar Radiation
 
 % Test Freya2 xxxxxxxx
-% Test 3 freya
+% Test 3 freya and vero
 
 %% Atmospheric Long-wave radiation
 
