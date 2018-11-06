@@ -44,7 +44,7 @@ E_p = 0.011*((U_i^2*B_i^2)/(H_i^2*Us_i^2));         % Fischer et al 1979; Manual
 %% HEAT SURFACE FLUX
 %% Solar Radiation
 
-% Test Freya2
+% Test Freya2 xxxxxxxx
 
 
 %% Atmospheric Long-wave radiation
