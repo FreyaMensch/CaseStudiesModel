@@ -52,11 +52,12 @@ E_p = 0.011*((U_i^2*B_i^2)/(H_i^2*Us_i^2));         % Fischer et al 1979; Manual
 
 % Test Freya2 xxxxxxxx
 % Test 3 freya and freya2
+% Test 3 freya and vero
 
 
 %% Atmospheric Long-wave radiation
 
-
+%%% change something
 
 
 %% Water-longwave radiation
