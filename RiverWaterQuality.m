@@ -7,7 +7,8 @@
 % TEST 2 and 3
 % last try
 % test ali
-%test2 ali
+%test2 ali % puting some conflict:)
+
 
 %% FLOW BALANCE
 %% Flow Balance
