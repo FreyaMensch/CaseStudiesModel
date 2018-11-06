@@ -7,10 +7,6 @@
 % TEST 2 and 3
 % last try
 
-%%% change something
-
-
-
 %% FLOW BALANCE
 %% Flow Balance
 Q =                 % total flow rate [m³/s] - if everywhere the same
@@ -53,7 +49,7 @@ E_p = 0.011*((U_i^2*B_i^2)/(H_i^2*Us_i^2));         % Fischer et al 1979; Manual
 
 %% Atmospheric Long-wave radiation
 
-
+%%% change something
 
 
 %% Water-longwave radiation
