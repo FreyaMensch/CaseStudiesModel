@@ -106,16 +106,114 @@ Dbulk=BulkDispersion(q,H,S_river,w,dx,A_c);
 
 
 %% HEAT SURFACE FLUX
+%%
+
+% Measured Data
+t_m   = [15; 46; 74; 105; 135; 166; 196; 227; 258; 288; 319; 349]*86400;                          % measurement times [s]
+p_m   = [94540; 94380; 94980; 94430; 95280; 95150; 95330; 95110; 95490; 95470; 95670; 95480];     % air pressure [Pa]
+T_a_m = [5.34; 1.23; 2.63; 7; 14.1; 16; 17.4; 16.9; 13.6; 10.7; 9; 3.2] + 273.15;                 % air temperature[K]
+e_a_m = [530; 750; 880; 930; 1210; 1280; 1370; 1260; 1200; 940; 800; 767];                        % absolute humidty [Pa]
+v_w_m = [1.04; 1.19; 2; 1.26; 1.67; 1; 2.88; 1.4; 1.5; 2.5; 1.3; 1.2];                            % wind speed[m/s]
+B_m   = [0.79; 0.82; 0.65; 0.86; 0.76; 0.84; 0.51; 0.87; 0.98; 0.9; 0.75; 0.9];                   % cloud coverage [-]
+H_G_m = [36.46; 63.66; 113.54; 125.5; 174.07; 201.22; 201.87; 183.68; 146.53; 89; 57.06; 55];     % global raditaion[W/m2]
+
+% Characteristics of the lake
+depth = 2;           % mean depth of the river [m]
+alpha = 0.05;        % albedo [-]
+
+% Initial conditions
+T_w0 = 13 + 273.15;    % initial river temperature, [K]
+tspan = [0:366]*86400; % Time span of one year in seconds
+
+% interpolation mode
+mode='cubic';
+
+
+% Solve ODE
+[t,T_w] = ode15s(@heatlakeode, tspan,T_w0,[],...
+                  t_m,p_m,T_a_m,e_a_m,v_w_m,B_m,H_G_m,depth,alpha,mode);
+
+% Convert back to 
+T_w = T_w - 273.15;
+
+% Plot
+figure(1)
+clf
+plot(t/86400,T_w,'b');
+title('Lake Temperature');
+datetick('x','mmm-dd');
+xlabel('Date');
+ylabel('T_w [K]');
+drawnow
+
+% Try different initial condition
+ %T_w0 = 13 + 273.15;
+%[t,T_w] = ode15s(@heatlakeode, tspan,T_w0,[],...
+                 % t_m,p_m,T_a_m,e_a_m,v_w_m,B_m,H_G_m,depth,alpha,mode);
+
+% Compute with minimal depth => equilibrium temperature
+
+[t,T_e] = ode15s(@heatlakeode, tspan,T_w0,[],...
+               t_m,p_m,T_a_m,e_a_m,v_w_m,B_m,H_G_m,1,alpha,mode);
+
+% Convert back to °C
+T_w = T_w - 273.15;
+T_e = T_e - 273.15;
+
+hold on
+plot(t/86400,T_e,':k',t/86400,...
+    interp1(t_m,T_a_m,t,mode,'extrap')-273.15,'k--');
+hold off
+legend('T_{ini}=13K','T_{eq}','T_{air}','location','best') %,'T_{ini}=4K'
+
+legend(gca,'boxoff')
+
+%%
+function dTdt = heatlakeode(t,T_w,t_m,p_m,T_a_m,e_a_m,v_w_m,B_m,H_G_m,...
+                           depth,alpha,mode)
+% ODE for the temperature model
+% Constants
+rho_w = 1000;       % mass density of water[kg/m^3]
+W_ET = 2.5e6;       % specific enthalpy of volatilization of water [J/kg]
+sigma = 5.67e-8;    % Stefan-Boltzmann-constant [W/(m^2 * K^-4)]
+C_p = 4185;         % specific heat capacity of water [J/kg/K]
+
+% interpolate the measured data to the current time point
+
+p=interp1(t_m,p_m,t,'linear','extrap');
+T_a=interp1(t_m,T_a_m,t,'linear','extrap');
+e_a=interp1(t_m,e_a_m,t,mode,'extrap');
+v_w=interp1(t_m,v_w_m,t,mode,'extrap');
+B=interp1(t_m,B_m,t,mode,'extrap');
+H_G=interp1(t_m,H_G_m,t,mode,'extrap');
+
+
+% Latent heat flux
+theta = T_w - 273.15;                                    % water temperature in centigrades [°C]
+e_sat = 6.111213*exp(17.5043*theta/(241.2 + theta))*100; % vapor pressure at saturation [Pa]
+f = 5.44+2.19*v_w+0.24*(T_w-T_a);                        % wind factor [W/m2/Pa]
+H_ET = f*(e_sat-e_a)/100;                                % latent heat flux [W/m2]
+
+
+% Sensible heat flux
+Bo = (T_w-T_a)/(e_sat-e_a)*p*6.5e-4; % Bowen ratio [-]
+%H_c = H_ET*Bo;
+kc = 0.203*sqrt(v_w);
+H_c = kc*(T_w-T_a);
+
+% Heat budget due to short-wavelength radiation
+H_insw = H_G ; % Measured radiation in the VIS spectrum (already accounting for cloud coverage)
+H_outsw = alpha * H_insw; % reflected short-wave radiation
+
+% Long wave radiation
+H_lwout = sigma * T_w^4;                                 % heat radiation of lake
+H_lwin = 6.8e-8*(e_a/100/T_a)^(1/7)*(1+0.17*B^2)*T_a^4;  % atmospheric backscattering
+
+% Sum them up!
+dTdt = (H_insw - H_outsw + H_lwin - H_lwout - H_ET - H_c)/(depth*rho_w*C_p); 
+end
+
 %% Solar Radiation
-
-
-
-
-%% Atmospheric Long-wave radiation
-
-
-
-%% Water-longwave radiation
 
 %% Conduction and Convection
 
