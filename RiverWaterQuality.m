@@ -23,14 +23,14 @@
 %% PARAMETERS to be adjusted
 Q = 10;                              % volumetric flux [m³/s]       % eg Neckar in Tübingen ~ 30 m³/s
 n = 0.03;                            % Manning roughness coefficient
- S_river = [0.001 0.001 0.001];       % bottom slope [m/m]
+ S_river = [0.001 0.002 0.003];       % bottom slope [m/m]
 %S_river = [0.001 0.002 0.004];       % bottom slope [m/m]
  B_0 = [3 3 3];                       % bottom width [m]
 %B_0 = [2.5 3 4]; 
 s_bank = [1 1 1];                    % slope of river banks [m/m] (dy/dy)
 % s_bank = [1 2 0.5];
 H_0 = 2;                             % initial water depth in first reach
-
+L_reach=10000;                             % reach length [m]
 
 %% CALCULATION of water depth
 H = [H_0; zeros(3,1)]';     % creates a vector for water depth [m]
@@ -53,14 +53,37 @@ A_c(j) = (B_0(j)+s_bank(j)*H(j+1))*H(j+1);     % cross-sectional area [m²]
 q(j) = Q./A_c(j);                              % specific discharge [m/s]
 end
 
-
-%%
+%% ADVECTION    NOT FINISH YET!!!
+dx = 10  ;               % element length fix [m]
+x=dx:dx:L_reach;
+dt = 10   ;         % with Courant number = 1 should be =dx/q;
+te = 60*60*24   ;
+T_in= 300;
+T=[T_in, zeros(1,length(x)-1)];
+    
+ for t=dt:dt:te
+     T(2:end)=T(1:end-1);
+%  T=[0,T];
+     T = T + q(1).*(dt/dx).*(T(1:end-1)-T(2:end));
+     T=[0,T]
+    figure(1)
+    plot(x,T);
+    xlabel('x [m]');
+    ylabel('T [K]');
+    title(sprintf('Concentration, t=%6.1f',t));
+    drawnow
+    
+ end
+    
 %% Longitudinal Dispersion      Manual p.18
-% parameters
-U
+%info: in here lhe longitudinal dispersion is calculated for every reach,
+%and 
+w=[20 22 30]   ;     %  width of river [m] from above . NEEDS TO BE CALCULATED!
+Ac=[4 4 4]  ;        % cross-sectional area from above . NEEDS TO BE CALCULATED!
 
-% longitudinal dispersion
-E_p = 0.011*((U_i^2*B_i^2)/(H_i^2*Us_i^2));         % Fischer et al 1979; Manual p.18
+Dbulk=BulkDispersion(q,H,S_river,w,dx,Ac);
+
+
 
 
 
@@ -73,12 +96,9 @@ E_p = 0.011*((U_i^2*B_i^2)/(H_i^2*Us_i^2));         % Fischer et al 1979; Manual
 
 %% Atmospheric Long-wave radiation
 
-%%% change something
 
 
 %% Water-longwave radiation
-
-
 
 %% Conduction and Convection
 
