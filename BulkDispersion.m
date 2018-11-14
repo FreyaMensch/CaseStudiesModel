@@ -19,6 +19,6 @@ else if Dnum>D
     end
 end
 
-Dbulk= (Dm.*Ac.*2)./dx  ;   % assuming that dx does not change
+Dbulk= (Dm.*Ac)./dx  ;   % assuming that dx is the same for all elements
 end
 
