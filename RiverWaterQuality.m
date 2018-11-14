@@ -53,36 +53,53 @@ A_c(j) = (B_0(j)+s_bank(j)*H(j+1))*H(j+1);     % cross-sectional area [m²]
 q(j) = Q./A_c(j);                              % specific discharge [m/s]
 end
 
-%% ADVECTION    NOT FINISH YET!!!
+%% ADVECTION  
 dx = 10  ;               % element length fix [m]
 x=dx:dx:L_reach;
-dt = 10   ;         % with Courant number = 1 should be =dx/q;
-te = 60*60*24   ;
+dt = dx/q(1)   ;         % with Courant number = 1 should be =dx/q;
+te = 60*60*3  ;
 T_in= 300;
-T=[T_in, zeros(1,length(x)-1)];
+% T=T_in.*ones(1,length(x));
+T = zeros(1,length(x));
+% Longitudinal Dispersion      Manual p.18
+%info: in here lhe longitudinal dispersion is calculated for every reach,
+
+w=[50 45 54]   ;     %  width of river [m] from above . NEEDS TO BE CALCULATED!
+Dbulk=BulkDispersion(q,H,S_river,w,dx,A_c);
     
- for t=dt:dt:te
-     T(2:end)=T(1:end-1);
-%  T=[0,T];
-     T = T + q(1).*(dt/dx).*(T(1:end-1)-T(2:end));
-     T=[0,T]
-    figure(1)
-    plot(x,T);
-    xlabel('x [m]');
-    ylabel('T [K]');
-    title(sprintf('Concentration, t=%6.1f',t));
-    drawnow
+ for t=0:dt:te
+%========================= ADVECTION ====================================== 
+      T(2:end)=T(1:end-1);
+      T(1)= T_in;
+
+%        figure(1)
+%       plot(x,T);
+% %     hold on
+%       ylim([0 320]);
+% %     xlim([0 5000]);
+% %     xlabel('x [m]');
+% %     ylabel('T [K]');
+%      title(sprintf('Temperature, t=%6.1f h',t/3600));
+%       drawnow
     
+%========================= DISPERSION ===================================== 
+%NOT FINISHED YET
+       Hd=Dbulk(1).*(T(1:end-1)-T(2:end))./(A_c(1).*dx);
+       Hd =[0 Hd Hd(end)];                     % boundary conditions 
+       T = T+ dt.*(Hd(1:end-1)-Hd(2:end)); 
+% 
+%         figure(1)
+%     plot(x,T);
+% %     ylim([0 
+% % %     hold on
+% %     xlabel('x [m]');
+% %     ylabel('T [K]');
+%     title(sprintf('Temperature, t=%6.1f h',t/3600));
+%     drawnow
+% %    
+ 
  end
     
-%% Longitudinal Dispersion      Manual p.18
-%info: in here lhe longitudinal dispersion is calculated for every reach,
-%and 
-w=[20 22 30]   ;     %  width of river [m] from above . NEEDS TO BE CALCULATED!
-Ac=[4 4 4]  ;        % cross-sectional area from above . NEEDS TO BE CALCULATED!
-
-Dbulk=BulkDispersion(q,H,S_river,w,dx,Ac);
-
 
 
 
