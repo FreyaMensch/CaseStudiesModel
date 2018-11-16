@@ -34,27 +34,25 @@ H_0 = 2;                             % initial water depth in first reach
 L_reach=1000;                             % reach length [m]
 
 %% CALCULATION of water depth
-H = [H_0; zeros(3,1)]';     % creates a vector for water depth [m]
+H = zeros(3,1)';     % creates a vector for water depth [m]
 A_c = zeros(3,1)';          % creates a vector for cross sectional area [m²]
 A_s = zeros(3,1)';          % creates a vector for surface area (water-atmosphere interface) [m²]
 q = zeros(3,1)';            % creates a vector for specific discharge [m/s]
 
-for j=1:3
-for i=2:4
-    % Manning's equation solved for water depth H:    [QUAL2K maual eq(17)]
-    H(i)= (((Q*n)^(3/5)).*(B_0(i-1)+2.*H(i-1)*sqrt(s_bank(i-1).^2+1)).^(2/5))/((S_river(i-1)^(3/10)).*(B_0(i-1)+s_bank(i-1).*H(i-1)));
-    % H(i)= (((Q*n)^(3/5))*(B_0(i-1)+2.*H(i-1)*sqrt(s_bank(i-1).^2+1))^(2/5))/((S_river(i-1)^(3/10)).*(B_0(i-1)+s_bank(i-1).*H(i-1)));
-    % same as above, BUT all H refering to initial height H_0:
-    %H(i)= (((Q*n)^(3/5))*(B_0(i-1)+2.*H_0*sqrt(s_bank(i-1).^2+1))^(2/5))/((S_river(i-1)^(3/10)).*(B_0(i-1)+s_bank(i-1).*H_0));
-% Note: the first iteration of H(i-1) refers to the H_0, the following to 
-% the H value calculated in the previous iteration whereas the other 
-% parameters(i-1) all refer to the parameters defined in PARAMETERS section
-end
-A_c(j) = (B_0(j)+s_bank(j)*H(j+1))*H(j+1);     % cross-sectional area [m²] 
-b_s(j) = H(j+1)/s_bank(j);                     % length of water surface over sloped bank [m]
-B_s(j) = B_0(j) + 2*b_s(j);                     % total width of river at water surface [m]
-A_s(j) = B_s(j)*L_reach;                       % surface area (water-atmosphere interface) [m²]
-q(j) = Q./A_c(j);                              % specific discharge [m/s]
+
+for i=1:3
+    if i == 1
+        H(i)= (((Q*n)^(3/5))*(B_0(i)+2.*H_0*sqrt(s_bank(i).^2+1))^(2/5))/((S_river(i)^(3/10)).*(B_0(i)+s_bank(i).*H_0));
+    else 
+        % Manning's equation solved for water depth H:    [QUAL2K maual eq(17)]
+        H(i)= (((Q*n)^(3/5)).*(B_0(i)+2.*H(i)*sqrt(s_bank(i).^2+1)).^(2/5))/((S_river(i)^(3/10)).*(B_0(i)+s_bank(i).*H(i)));
+        % H(i)= (((Q*n)^(3/5))*(B_0(i-1)+2.*H(i-1)*sqrt(s_bank(i-1).^2+1))^(2/5))/((S_river(i-1)^(3/10)).*(B_0(i-1)+s_bank(i-1).*H(i-1)));
+    end    
+A_c(i) = (B_0(i)+s_bank(i)*H(i))*H(i);     % cross-sectional area [m²] 
+b_s(i) = H(i)/s_bank(i);                     % length of water surface over sloped bank [m]
+B_s(i) = B_0(i) + 2*b_s(i);                     % total width of river at water surface [m]
+A_s(i) = B_s(i)*L_reach;                       % surface area (water-atmosphere interface) [m²]
+q(i) = Q./A_c(i);                              % specific discharge [m/s]
 end
 
 %% ADVECTION  
@@ -63,7 +61,7 @@ x=dx:dx:L_reach;
 dt = dx/q(1)   ;         % with Courant number = 1 should be =dx/q;
 te = 60*60*3  ;
 T_in= 300;
-% T=T_in.*ones(1,length(x));
+%T=T_in.*ones(1,length(x));
 T = zeros(1,length(x));
 % Longitudinal Dispersion      Manual p.18
 %info: in here lhe longitudinal dispersion is calculated for every reach,
@@ -87,7 +85,11 @@ Dbulk=BulkDispersion(q,H,S_river,w,dx,A_c);
 %       drawnow
     
 %========================= DISPERSION ===================================== 
+dx = (4*D)/q;           % discretisation in space
+dt = (4*D)/q^2;         % discretisation in time
+
 %NOT FINISHED YET
+       %Hd = (Dbulk(1)/(A_c(1)*dx))*(T(i-1)-2*T(i)+T(i+1));
        Hd=Dbulk(1).*(T(1:end-1)-T(2:end))./(A_c(1).*dx);
        Hd =[0 Hd Hd(end)];                     % boundary conditions 
        T = T+ dt.*(Hd(1:end-1)-Hd(2:end)); 
