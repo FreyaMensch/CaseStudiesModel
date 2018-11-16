@@ -31,7 +31,7 @@ n = 0.03;                            % Manning roughness coefficient
 s_bank = [1 1 1];                    % slope of river banks [m/m] (dy/dy)
 % s_bank = [1 2 0.5];
 H_0 = 2;                             % initial water depth in first reach
-L_reach=1000;                             % reach length [m]
+L_reach=10000;                             % reach length [m]
 
 %% CALCULATION of water depth
 H = zeros(3,1)';     % creates a vector for water depth [m]
@@ -55,21 +55,30 @@ A_s(i) = B_s(i)*L_reach;                       % surface area (water-atmosphere 
 q(i) = Q./A_c(i);                              % specific discharge [m/s]
 end
 
-%% ADVECTION  
-dx = 10  ;               % element length fix [m]
-x=dx:dx:L_reach;
-dt = dx/q(1)   ;         % with Courant number = 1 should be =dx/q;
-te = 60*60*3  ;
-T_in= 300;
-%T=T_in.*ones(1,length(x));
-T = zeros(1,length(x));
-% Longitudinal Dispersion      Manual p.18
-%info: in here lhe longitudinal dispersion is calculated for every reach,
 
-w=[50 45 54]   ;     %  width of river [m] from above . NEEDS TO BE CALCULATED!
-Dbulk=BulkDispersion(q,H,S_river,w,dx,A_c);
-    
- for t=0:dt:te
+
+%% LONGITUDINAL DISPERSION
+%   Manual p.18
+%info: in here lhe longitudinal dispersion (coefficient) is calculated for every reach
+Hmean=H(1:3) ;     % mean depth [m]  f
+g=9.81 ;      %[m/s^2]
+Vsh=sqrt((g*Hmean.^2).*S_river);    %% Shear velocity [m/s](QUAL2K.p18)
+D=(0.011.*(q.^2).*(B_s.^2))./(q.*Vsh);
+
+dx=(4.*D)./q   ;   %Courant number = 1, Neuman number =1/4
+% dx =100 ;              % element length fix [m]
+dt = 4.*D./q.^2   ;         % with Courant number = 1 should be =dx/q;
+
+Dbulk= (D.*A_c)./dx   ;
+
+x=dx(1):dx(1):L_reach;
+te = 60*60*2  ;
+T_in= 300;
+% T=T_in.*ones(1,length(x));
+T = zeros(1,length(x));
+
+  
+ for t=0:dt(1):te
 %========================= ADVECTION ====================================== 
       T(2:end)=T(1:end-1);
       T(1)= T_in;
@@ -86,18 +95,18 @@ Dbulk=BulkDispersion(q,H,S_river,w,dx,A_c);
     
 %========================= DISPERSION ===================================== 
 %NOT FINISHED YET
-       Hd=Dbulk(1).*(T(1:end-1)-T(2:end))./(A_c(1).*dx);
+       Hd=Dbulk(1).*(T(1:end-1)-T(2:end))./(A_c(1).*dx(1));
        Hd =[0 Hd Hd(end)];                     % boundary conditions 
-       T = T+ dt.*(Hd(1:end-1)-Hd(2:end)); 
-% 
-%         figure(1)
-%     plot(x,T);
-% %     ylim([0 
-% % %     hold on
-% %     xlabel('x [m]');
-% %     ylabel('T [K]');
-%     title(sprintf('Temperature, t=%6.1f h',t/3600));
-%     drawnow
+       T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end)); 
+% % 
+        figure(1)
+    plot(x,T);
+    ylim([0 320])
+% %     hold on
+%     xlabel('x [m]');
+%     ylabel('T [K]');
+    title(sprintf('Temperature, t=%6.1f h',t/3600));
+    drawnow
 % %    
  
  end
