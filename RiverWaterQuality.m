@@ -85,11 +85,7 @@ Dbulk=BulkDispersion(q,H,S_river,w,dx,A_c);
 %       drawnow
     
 %========================= DISPERSION ===================================== 
-dx = (4*D)/q;           % discretisation in space
-dt = (4*D)/q^2;         % discretisation in time
-
 %NOT FINISHED YET
-       %Hd = (Dbulk(1)/(A_c(1)*dx))*(T(i-1)-2*T(i)+T(i+1));
        Hd=Dbulk(1).*(T(1:end-1)-T(2:end))./(A_c(1).*dx);
        Hd =[0 Hd Hd(end)];                     % boundary conditions 
        T = T+ dt.*(Hd(1:end-1)-Hd(2:end)); 
