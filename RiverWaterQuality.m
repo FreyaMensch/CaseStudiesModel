@@ -18,7 +18,8 @@
 %% COMMENTS on Geometry
 % info: so far 3 reaches are computed, all have different hydraulic 
 % parameters, this can be changed to more reaches if liked
-% output parameters: (needed for further calculations) H, A_c, A_s, q
+% output parameters: (needed for further calculations) H, q, A_c, A_s with
+% B_s (width @surface) for Dispersion
 
 %% PARAMETERS to be adjusted
 Q = 10;                              % volumetric flux [m³/s]       % eg Neckar in Tübingen ~ 30 m³/s
@@ -41,17 +42,23 @@ q = zeros(3,1)';            % creates a vector for specific discharge [m/s]
 for j=1:3
 for i=2:4
     % Manning's equation solved for water depth H:    [QUAL2K maual eq(17)]
-    %H(i)= (((Q*n)^(3/5))*(B_0(i-1)+2.*H(i-1)*sqrt(s_bank(i-1).^2+1))^(2/5))/((S_river(i-1)^(3/10)).*(B_0(i-1)+s_bank(i-1).*H(i-1)));
+    H(i)= (((Q*n)^(3/5)).*(B_0(i-1)+2.*H(i-1)*sqrt(s_bank(i-1).^2+1)).^(2/5))/((S_river(i-1)^(3/10)).*(B_0(i-1)+s_bank(i-1).*H(i-1)));
+    % H(i)= (((Q*n)^(3/5))*(B_0(i-1)+2.*H(i-1)*sqrt(s_bank(i-1).^2+1))^(2/5))/((S_river(i-1)^(3/10)).*(B_0(i-1)+s_bank(i-1).*H(i-1)));
     % same as above, BUT all H refering to initial height H_0:
-    H(i)= (((Q*n)^(3/5))*(B_0(i-1)+2.*H_0*sqrt(s_bank(i-1).^2+1))^(2/5))/((S_river(i-1)^(3/10)).*(B_0(i-1)+s_bank(i-1).*H_0));
+    %H(i)= (((Q*n)^(3/5))*(B_0(i-1)+2.*H_0*sqrt(s_bank(i-1).^2+1))^(2/5))/((S_river(i-1)^(3/10)).*(B_0(i-1)+s_bank(i-1).*H_0));
 % Note: the first iteration of H(i-1) refers to the H_0, the following to 
 % the H value calculated in the previous iteration whereas the other 
 % parameters(i-1) all refer to the parameters defined in PARAMETERS section
 end
 A_c(j) = (B_0(j)+s_bank(j)*H(j+1))*H(j+1);     % cross-sectional area [m²] 
+% B_s(j)
 %A_s(j) = ;                                     % surface area (water-atmosphere interface) [m²]
 q(j) = Q./A_c(j);                              % specific discharge [m/s]
 end
+
+
+
+
 
 
 %%
