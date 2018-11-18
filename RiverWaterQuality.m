@@ -8,6 +8,9 @@
 % Oxygen model: Veronica
 
 
+%% Problems to solve:
+% we have very different time scales.. in order to see dispersion we have to have very small time scales but on the year basis 
+
 %%
 %% MODEL
 %%
@@ -31,15 +34,17 @@ B_0 = [3 3 3];                       % bottom width [m]
 s_bank = [1 1 1];                    % slope of river banks [m/m] (dy/dy)
 %s_bank = [1 2 0.5];                    % slope of river banks [m/m] (dy/dy)
 H_0 = 2;                             % initial water depth in first reach
-L_reach=10000;                       % reach length [m]
+L_tot = 30000;                       % total length of river [m]
+reach_nr= 3;                         % number of reaches [-]
+L_reach=L_tot/reach_nr;              % reach length [m]
 
 %% CALCULATION of water depth
-H = zeros(3,1)';     % creates a vector for water depth [m]
-A_c = zeros(3,1)';          % creates a vector for cross sectional area [m²]
-A_s = zeros(3,1)';          % creates a vector for surface area (water-atmosphere interface) [m²]
-q = zeros(3,1)';            % creates a vector for specific discharge [m/s]
+H = zeros(reach_nr,1)';     % creates a vector for water depth [m]
+A_c = zeros(reach_nr,1)';          % creates a vector for cross sectional area [m²]
+A_s = zeros(reach_nr,1)';          % creates a vector for surface area (water-atmosphere interface) [m²]
+q = zeros(reach_nr,1)';            % creates a vector for specific discharge [m/s]
 
-for i=1:3
+for i=1:reach_nr
     % Manning's equation solved for water depth H:    [QUAL2K maual eq(17)]
     if i == 1
         H(i)= (((Q*n)^(3/5))*(B_0(i)+2.*H_0*sqrt(s_bank(i).^2+1))^(2/5))/((S_river(i)^(3/10)).*(B_0(i)+s_bank(i).*H_0));
@@ -60,23 +65,29 @@ end
 %% Parameters
 % QUAL2K-Manual p.18
 %info: in here the longitudinal dispersion (coefficient) is calculated for every reach
-Hmean=H(1:3) ;                      % mean depth [m]  f
-g=9.81 ;                            %[m/s^2]
-Vsh=sqrt((g*Hmean.^2).*S_river);    % Shear velocity [m/s](QUAL2K.p18)
-D=(0.011.*(q.^2).*(B_s.^2))./(q.*Vsh);
+Hmean=H(1:reach_nr) ;                   % mean depth [m]
+g=9.81 ;                                %[m/s^2]
+Vsh=sqrt((g*Hmean.^2).*S_river);        % Shear velocity [m/s](QUAL2K.p18)
+D=(0.011.*(q.^2).*(B_s.^2))./(q.*Vsh);  % i think there is a time missing in the denominator? like this D has units of m² but it should be m²/s !?
 
-dx=(4.*D)./q   ;            %Courant number = 1, Neuman number =1/4
-% dx =100 ;                 % element length fix [m]
-dt = 4.*D./q.^2   ;         % with Courant number = 1 should be =dx/q;
+% Courant number = 1, Neuman number =1/4 :
+%dx=(4.*D)./q   ;            
+dx =20 ;                 % element length fix [m]
+ dt = 4.*D./q.^2   ;         % with Courant number = 1 should be =dx/q;
+%dt = 60;                  % time fixed [s]
 
-Dbulk= (D.*A_c)./dx   ;
+Dbulk= (D.*A_c)./dx   ;     % bulk diffusion coefficient
 
 x=dx(1):dx(1):L_reach;
-te = 60*60*2  ;
+
 T_in= 300;
 % T=T_in.*ones(1,length(x));
 T = zeros(1,length(x));
 
+te = 2*60*60;               % end time [h]
+
+t=0:dt(1):te;
+T_eq=zeros(length(x),length(t));
   
  for t=0:dt(1):te
 %========================= ADVECTION ====================================== 
@@ -89,6 +100,7 @@ Hd =[0 Hd Hd(end)];                     % boundary conditions
 T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end)); 
  
 % ========================= CONDUCTION =====================================
+% NOT WORKING PROperLY YET = Not giving plausible results
 % lambda_w = 5.7;                             % heat conductance of water [W/(m*K)]
 % H_cond=-lambda_w*(T(1:end-1)-T(2:end)); 
 % H_cond =[0 H_cond H_cond(end)]; 
@@ -103,6 +115,10 @@ xlabel('x [m]');
 ylabel('T [K]');
 title(sprintf('Temperature, t=%6.1f h',t/3600));
 drawnow
+
+% collecting all values in a matrix:
+% t=0:dt(1):te;
+% T_eq(length(x),length(t))=T(x(i))
 end
 
 
