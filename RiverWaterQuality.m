@@ -11,6 +11,8 @@
 %%
 %% MODEL
 %%
+clear all
+close all
 
 %% ---------- 1. RIVER GEOMETRY ----------- 
 %% COMMENTS on Geometry
@@ -78,37 +80,30 @@ T = zeros(1,length(x));
   
  for t=0:dt(1):te
 %========================= ADVECTION ====================================== 
-T(2:end)=T(1:end-1);
 T(1)= T_in;
-
-%        figure
-%       plot(x,T);
-% %     hold on
-%       ylim([0 320]);
-% %     xlim([0 5000]);
-% %     xlabel('x [m]');
-% %     ylabel('T [K]');
-%      title(sprintf('Temperature, t=%6.1f h',t/3600));
-%       drawnow
+T(2:end)=T(1:end-1);
     
 %========================= DISPERSION ===================================== 
 Hd=Dbulk(1).*(T(1:end-1)-T(2:end))./(A_c(1).*dx(1));
 Hd =[0 Hd Hd(end)];                     % boundary conditions 
 T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end)); 
-
-figure
-plot(x,T);
-ylim([0 320])
-% %     hold on
-%     xlabel('x [m]');
-%     ylabel('T [K]');
-title(sprintf('Temperature, t=%6.1f h',t/3600));
-drawnow  
-  end
- 
  
 % ========================= CONDUCTION =====================================
-    
+% lambda_w = 5.7;                             % heat conductance of water [W/(m*K)]
+% H_cond=-lambda_w*(T(1:end-1)-T(2:end)); 
+% H_cond =[0 H_cond H_cond(end)]; 
+% T = T+ dt(1).*(H_cond(1:end-1)-H_cond(2:end)); 
+
+% Plot
+figure(1)
+plot(x,T);
+ylim([0 320])
+% hold on
+xlabel('x [m]');
+ylabel('T [K]');
+title(sprintf('Temperature, t=%6.1f h',t/3600));
+drawnow
+end
 
 
 %% 2b. Sources & Sink Terms of Heat Balance -----------------------------
@@ -124,7 +119,7 @@ H_G_m = [36.46; 63.66; 113.54; 125.5; 174.07; 201.22; 201.87; 183.68; 146.53; 89
 
 %% PARAMETERS to be adjusted
 % Characteristics of the lake
-depth = 2;           % mean depth of the river [m]
+depth = H(1);           % mean depth of the river [m]
 depth_min = 1e-3;    % minimal depth to compute equilibrium depth
 alpha = 0.05;        % albedo [-] value of 0.05 corresponds to ... surface (source:)
 
