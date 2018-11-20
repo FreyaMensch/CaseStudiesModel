@@ -125,24 +125,30 @@ end
 
 %% 2b. Sources & Sink Terms of Heat Balance -----------------------------
 
-% %% Exemplary measured Data
-% t_m   = [15; 46; 74; 105; 135; 166; 196; 227; 258; 288; 319; 349]*86400;                          % measurement times [s]
-% p_m   = [94540; 94380; 94980; 94430; 95280; 95150; 95330; 95110; 95490; 95470; 95670; 95480];     % air pressure [Pa]
-% T_a_m = [5.34; 1.23; 2.63; 7; 14.1; 16; 17.4; 16.9; 13.6; 10.7; 9; 3.2] + 273.15;                 % air temperature[K]
-% e_a_m = [530; 750; 880; 930; 1210; 1280; 1370; 1260; 1200; 940; 800; 767];                        % absolute humidty [Pa]
-% v_w_m = [1.04; 1.19; 2; 1.26; 1.67; 1; 2.88; 1.4; 1.5; 2.5; 1.3; 1.2];                            % wind speed[m/s]
-% B_m   = [0.79; 0.82; 0.65; 0.86; 0.76; 0.84; 0.51; 0.87; 0.98; 0.9; 0.75; 0.9];                   % cloud coverage [-]
-% H_G_m = [36.46; 63.66; 113.54; 125.5; 174.07; 201.22; 201.87; 183.68; 146.53; 89; 57.06; 55];     % global raditaion[W/m2]
-
-B_m=(1-0.1).*rand(8724,1)+0.1;
-
-t_m=load('t_m.txt');         % measurement times [days]
-p_m=load('p_m.txt');         % air pressure [kPa]
-T_a_m=load('T_a_m.txt');     % air temperature[�C]
-R_H=load('RHumdity.txt');    % Relative humidty [%]
+%% Exemplary measured Data
+t_m=load('t_m.txt');         % measurement times [days]  > we need measurement times in [s]
+p_m=load('p_m.txt');         % air pressure [kPa]  > we need air pres in [Pa] as input
+T_a_m=load('T_a_m.txt');     % air temperature[�C] > we need Temp in [K] as input
+R_H=load('RHumdity.txt');    % Relative humidty [%] > we need absolute humidity as input
 w_spd=load('v_w_m.txt');     % wind speed[m/s]
-B_m=load('B_m.txt') ;        % Cloude coverage [-]
 H_G_m=load('H_G_m.txt');     % need solar radiation[w/m^2], !!!
+B_m=(1-0.1).*rand(8724,1)+0.1; % Cloud coverage [-]
+
+
+p_m=daily_mean(p_m);
+T_a_m=daily_mean(T_a_m);
+
+
+
+% function to create daily means
+function parMean=daily_mean(x) 
+for i =1:24:x(end)
+    parMean = sum(x(i:i+23))/24;
+end
+end
+
+
+
 
 
 
