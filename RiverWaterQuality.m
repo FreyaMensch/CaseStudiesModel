@@ -38,7 +38,7 @@ L_tot = 30000;                       % total length of river [m]
 reach_nr= 3;                         % number of reaches [-]
 L_reach=L_tot/reach_nr;              % reach length [m]
 
-%% CALCULATION of water depth
+%% CALCULATION of river geometry parameters
 H = zeros(reach_nr,1)';     % creates a vector for water depth [m]
 A_c = zeros(reach_nr,1)';          % creates a vector for cross sectional area [m²]
 A_s = zeros(reach_nr,1)';          % creates a vector for surface area (water-atmosphere interface) [m²]
@@ -56,6 +56,7 @@ b_s(i) = H(i)/s_bank(i);                % length of water surface over sloped ba
 B_s(i) = B_0(i) + 2*b_s(i);             % total width of river at water surface [m]
 A_s(i) = B_s(i)*L_reach;                % surface area (water-atmosphere interface) [m²]
 q(i) = Q./A_c(i);                       % specific discharge [m/s]
+V(i)= A_c(i)*L_reach;                   % volume of reach [m³]
 end
 
 %% -----------------------------------------------------
@@ -71,20 +72,20 @@ Vsh=sqrt((g*Hmean.^2).*S_river);        % Shear velocity [m/s](QUAL2K.p18)
 D=(0.011.*(q.^2).*(B_s.^2))./(q.*Vsh);  % i think there is a time missing in the denominator? like this D has units of m² but it should be m²/s !?
 
 % Courant number = 1, Neuman number =1/4 :
-%dx=(4.*D)./q   ;            
-dx =20 ;                 % element length fix [m]
- dt = 4.*D./q.^2   ;         % with Courant number = 1 should be =dx/q;
+dx=(4.*D)./q   ;            
+%dx =20 ;                 % element length fix [m]
+dt = 4.*D./q.^2   ;         % with Courant number = 1 should be =dx/q;
 %dt = 60;                  % time fixed [s]
 
 Dbulk= (D.*A_c)./dx   ;     % bulk diffusion coefficient
 
 x=dx(1):dx(1):L_reach;
 
-T_in= 300;
-% T=T_in.*ones(1,length(x));
-T = zeros(1,length(x));
+T_in= 295;
+T=(T_in-10).*ones(1,length(x));
+%T = zeros(1,length(x));
 
-te = 2*60*60;               % end time [h]
+te = 8*60*60;               % end time [h]
 
 t=0:dt(1):te;
 T_eq=zeros(length(x),length(t));
@@ -109,7 +110,7 @@ T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end));
 % Plot
 figure(1)
 plot(x,T);
-ylim([0 320])
+ylim([280 310])
 % hold on
 xlabel('x [m]');
 ylabel('T [K]');
@@ -132,6 +133,9 @@ e_a_m = [530; 750; 880; 930; 1210; 1280; 1370; 1260; 1200; 940; 800; 767];      
 v_w_m = [1.04; 1.19; 2; 1.26; 1.67; 1; 2.88; 1.4; 1.5; 2.5; 1.3; 1.2];                            % wind speed[m/s]
 B_m   = [0.79; 0.82; 0.65; 0.86; 0.76; 0.84; 0.51; 0.87; 0.98; 0.9; 0.75; 0.9];                   % cloud coverage [-]
 H_G_m = [36.46; 63.66; 113.54; 125.5; 174.07; 201.22; 201.87; 183.68; 146.53; 89; 57.06; 55];     % global raditaion[W/m2]
+
+
+
 
 %% PARAMETERS to be adjusted
 % Characteristics of the lake
