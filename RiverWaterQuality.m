@@ -38,8 +38,10 @@ L_tot = 30000;                       % total length of river [m]
 reach_nr= 3;                         % number of reaches [-]
 L_reach=L_tot/reach_nr;              % reach length [m]
 
+% idea just for fun: S_river= 0.001*rand(10,1); B_m=(1-0.1).*rand(8724,1)+0.1;
+% Tried, and it works > ask freya for code
 %% CALCULATION of river geometry parameters
-H = zeros(reach_nr,1)';     % creates a vector for water depth [m]
+H = zeros(reach_nr,1)';            % creates a vector for water depth [m]
 A_c = zeros(reach_nr,1)';          % creates a vector for cross sectional area [m²]
 A_s = zeros(reach_nr,1)';          % creates a vector for surface area (water-atmosphere interface) [m²]
 q = zeros(reach_nr,1)';            % creates a vector for specific discharge [m/s]
@@ -59,6 +61,10 @@ q(i) = Q./A_c(i);                       % specific discharge [m/s]
 V(i)= A_c(i)*L_reach;                   % volume of reach [m³]
 end
 
+%% time it takes the water from start to end of river
+%t_res = sum(L_reach./q);             % residence time of water parcel in river [seconds]
+t_res = sum(L_reach./q)/3600;        % residence time of water parcel in river [hours]
+
 %% -----------------------------------------------------
 %% ------------ 2.TEMPERATURE MODEL --------------------
 %% 2a. HEAT FLUXES WITHIN THE FLUIDS: ADVECTION, DISPERSION & CONDUCTION-------------------------
@@ -69,7 +75,7 @@ end
 Hmean=H(1:reach_nr) ;                   % mean depth [m]
 g=9.81 ;                                %[m/s^2]
 Vsh=sqrt((g*Hmean.^2).*S_river);        % Shear velocity [m/s](QUAL2K.p18)
-D=(0.011.*(q.^2).*(B_s.^2))./(q.*Vsh);  % i think there is a time missing in the denominator? like this D has units of m² but it should be m²/s !?
+D=(0.011.*(q.^2).*(B_s.^2))./(Hmean.*Vsh);  % i think there is a time missing in the denominator? like this D has units of m² but it should be m²/s !?
 
 % Courant number = 1, Neuman number =1/4 :
 dx=(4.*D)./q   ;            
@@ -85,7 +91,7 @@ T_in= 295;
 T=(T_in-10).*ones(1,length(x));
 %T = zeros(1,length(x));
 
-te = 8*60*60;               % end time [h]
+te = 2*60*60;               % end time [h]
 
 t=0:dt(1):te;
 T_eq=zeros(length(x),length(t));
@@ -99,23 +105,16 @@ T(2:end)=T(1:end-1);
 Hd=Dbulk(1).*(T(1:end-1)-T(2:end))./(A_c(1).*dx(1));
 Hd =[0 Hd Hd(end)];                     % boundary conditions 
 T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end)); 
- 
-% ========================= CONDUCTION =====================================
-% NOT WORKING PROperLY YET = Not giving plausible results
-% lambda_w = 5.7;                             % heat conductance of water [W/(m*K)]
-% H_cond=-lambda_w*(T(1:end-1)-T(2:end)); 
-% H_cond =[0 H_cond H_cond(end)]; 
-% T = T+ dt(1).*(H_cond(1:end-1)-H_cond(2:end)); 
 
 % Plot
-figure(1)
-plot(x,T);
-ylim([280 310])
-% hold on
-xlabel('x [m]');
-ylabel('T [K]');
-title(sprintf('Temperature, t=%6.1f h',t/3600));
-drawnow
+% figure(1)
+% plot(x,T);
+% ylim([280 310])
+% % hold on
+% xlabel('x [m]');
+% ylabel('T [K]');
+% title(sprintf('Temperature, t=%6.1f h',t/3600));
+% drawnow
 
 % collecting all values in a matrix:
 % t=0:dt(1):te;
@@ -125,34 +124,34 @@ end
 
 %% 2b. Sources & Sink Terms of Heat Balance -----------------------------
 
-%% Exemplary measured Data
-t_m=load('t_m.txt');         % measurement times [days]  > we need measurement times in [s]
-p_m=load('p_m.txt');         % air pressure [kPa]  > we need air pres in [Pa] as input
-T_a_m=load('T_a_m.txt');     % air temperature[�C] > we need Temp in [K] as input
-R_H=load('RHumdity.txt');    % Relative humidty [%] > we need absolute humidity as input
-w_spd=load('v_w_m.txt');     % wind speed[m/s]
-H_G_m=load('H_G_m.txt');     % need solar radiation[w/m^2], !!!
-B_m=(1-0.1).*rand(8724,1)+0.1; % Cloud coverage [-]
+%% Load measured data (exemplary)
+% for ode input we need others
+t_m=load('meteorological_input/t_m.txt');         % measurement times [d]  > we need measurement times in [s]
+p_m=load('meteorological_input/p_m.txt');         % air pressure [kPa]  > we need air pres in [Pa] as input
+T_a_m=load('meteorological_input/T_a_m.txt');     % air temperature[�C] > we need Temp in [K] as input
+R_H=load('meteorological_input/RHumdity.txt');    % Relative humidty [%] > we need absolute humidity as input
+v_w_m=load('meteorological_input/v_w_m.txt');     % wind speed[m/s]
+H_G_m=load('meteorological_input/shortRadIn.txt');     % solar input radiation[w/m^2], Measured radiation in the VIS spectrum
+B_m=(1-0.1).*rand(8724,1)+0.1;                    % Cloud coverage [-]
+
+% meterological input data - daily mean
+tm_n=floor(length(t_m));             % time in days [d] but as hourly values 
+tm_n=floor(length(t_m)/24);          % time in complete days [d] 
+t_m=(1:tm_n).*(60*60*24);            % time in seconds [s]
+p_m = daily_mean(p_m) *1000;         % air pressure in [Pa]
+T_a_m = daily_mean(T_a_m) + 273.15;  % air temperature in [K]
+R_H=daily_mean(R_H);                 % Relative humidty [%]
+v_w_m=daily_mean(v_w_m);
+H_G_m=daily_mean(H_G_m);
+B_m=daily_mean(B_m);                 % cloud coverage [-]
 
 
-p_m=daily_mean(p_m);
-T_a_m=daily_mean(T_a_m);
-
-
-
-% function to create daily means
-function parMean=daily_mean(x) 
-for i =1:24:x(end)
-    parMean = sum(x(i:i+23))/24;
-end
-end
-
-
-
-
-
-
-
+% save these for later: - keeps the hourly data as input values BUT very
+% long computational time (or an error?)
+% tm_n=floor(length(t_m));          % time in complete days [d] 
+% t_m=(1:tm_n).*(60*60);            % time in seconds [s]
+% p_m = p_m *1000;         % air pressure in [Pa]
+% T_a_m = T_a_m + 273.15;  % air temperature in [K]
 
 %% PARAMETERS to be adjusted
 % Characteristics of the lake
@@ -161,120 +160,76 @@ depth_min = 1e-3;    % minimal depth to compute equilibrium depth
 alpha = 0.05;        % albedo [-] value of 0.05 corresponds to ... surface (source:)
 
 % Initial conditions
-T_w0 = 13;              % initial river water temperature [°C]
-
-tspan = [0:366]*86400; % Time span of one year in seconds
-
+T_w0 = 8;                   % initial river water temperature [°C]
+T_w0 = T_w0 + 273.15;       % initial river water temperature [K]
+tspan = [1:tm_n] * 86400;   % Time span of one year in seconds of 363days
 
 %% Model
 % interpolation mode
-mode='cubic';
+mode='spline';                      % find reasonable mode.
 
-% adjustment of input parameters
-T_w0 = T_w0 + 273.15;   % initial river water temperature [K]
-
-% Solve ODE
+% Solve ODE 
 % ODE output is a time series of the water temperature
-[t,T_w] = ode15s(@heatlakeode, tspan,T_w0,[],...
-                  t_m,p_m,T_a_m,e_a_m,v_w_m,B_m,H_G_m,depth,alpha,mode);
+[t,T_w] = ode15s(@heatradiationODE, tspan,T_w0,[],...
+                  t_m,p_m,T_a_m,R_H,v_w_m,B_m,H_G_m,depth,alpha,mode);
 
+% Compute with minimal depth => equilibrium temperature
+% minimal depth was set to 1m < why?
+[t,T_e] = ode15s(@heatradiationODE, tspan,T_w0,[],...
+               t_m,p_m,T_a_m,R_H,v_w_m,B_m,H_G_m,depth_min,alpha,mode);
+
+          
 % Convert [K] back to [°C]
+T_e = T_e - 273.15;
+T_a_m = T_a_m - 273.15;  % air temperature in [C]
 T_w = T_w - 273.15;
 
 %% Plot
 figure
 clf
 plot(t/86400,T_w,'b');
-title('River Temperature');
 datetick('x','mmm-dd');
-xlabel('Date');
-ylabel('T_w [�C]');
-drawnow
-
-% Compute with minimal depth => equilibrium temperature
-% minimal depth was set to 1m < why?
-[t,T_e] = ode15s(@heatlakeode, tspan,T_w0,[],...
-               t_m,p_m,T_a_m,e_a_m,v_w_m,B_m,H_G_m,depth_min,alpha,mode);
-
-% Convert [K] back to [°C]
-T_e = T_e - 273.15;
-
 hold on
-plot(t/86400,T_e,':k',t/86400,...
-    interp1(t_m,T_a_m,t,mode,'extrap')-273.15,'k--');
+
+% air temperature interpolation
+plot(t/86400,interp1(t_m,T_a_m,t,mode,'extrap'),'k--');
+%plot(t_m,T_a_m,'k--');
+% plot(t2/86400,T_e,':k')
 hold off
-legend('T_{ini}=13K','T_{eq}','T_{air}','location','best') %,'T_{ini}=4K'
+
+title('River Temperature');
+xlabel('Date');
+ylabel('T_w [C]');
+legend('T_{w}=6K','T_{air}','location','best')    %,'T_{ini}=4K','T_{eq}'
 legend(gca,'boxoff')
 
-%%
-function dTdt = heatlakeode(t,T_w,t_m,p_m,T_a_m,e_a_m,v_w_m,B_m,H_G_m,...
-                           depth,alpha,mode)
-% ODE for the temperature model
-% Constants
-rho_w = 1000;       % mass density of water[kg/m^3]
-W_ET = 2.5e6;       % specific enthalpy of volatilization of water [J/kg]
-sigma = 5.67e-8;    % Stefan-Boltzmann-constant [W/(m^2 * K^-4)]
-C_p = 4185;         % specific heat capacity of water [J/kg/K]
-
-% interpolate the measured data to the current time point
-p=interp1(t_m,p_m,t,'linear','extrap');
-T_a=interp1(t_m,T_a_m,t,'linear','extrap');
-e_a=interp1(t_m,e_a_m,t,mode,'extrap');
-v_w=interp1(t_m,v_w_m,t,mode,'extrap');
-B=interp1(t_m,B_m,t,mode,'extrap');
-H_G=interp1(t_m,H_G_m,t,mode,'extrap');
+figure
+plot(t/86400,H_G_m)
+datetick('x','mmm-dd');
+title('Incoming Radiation');
+xlabel('Date');
+ylabel('H [W/m²]');
 
 
-%% Heat transfer in analogy to or coupled with mass tranfer
-% Latent heat flux
-theta = T_w - 273.15;                                    % water temperature in centigrades [�C]
-e_sat = 6.111213*exp(17.5043*theta/(241.2 + theta))*100; % vapor pressure at saturation [Pa]
-f = 5.44+2.19*v_w+0.24*(T_w-T_a);                        % wind factor [W/m2/Pa]
-H_ET = f*(e_sat-e_a)/100;                                % latent heat flux [W/m2]
+%% RUBBISH / STUFF THAT MIGHT COME IN HANDY LATER AGAIN
 
-% Sensible heat flux
-Bo = (T_w-T_a)/(e_sat-e_a)*p*6.5e-4; % Bowen ratio [-]
-%H_c = H_ET*Bo;
-kc = 0.203*sqrt(v_w);
-H_c = kc*(T_w-T_a);
-
-%% Heat transfer by radiation
-% Heat budget due to short-wavelength radiation
-H_insw = H_G ; % Measured radiation in the VIS spectrum (already accounting for cloud coverage)
-H_outsw = alpha * H_insw; % reflected short-wave radiation
-
-% Long wave radiation
-H_lwout = sigma * T_w^4;                                 % heat radiation of lake
-H_lwin = 6.8e-8*(e_a/100/T_a)^(1/7)*(1+0.17*B^2)*T_a^4;  % atmospheric backscattering
-
-% Sum them up!
-dTdt = (H_insw - H_outsw + H_lwin - H_lwout - H_ET - H_c)/(depth*rho_w*C_p); 
-end
+% might be handy to produce a large matrix of certain extend
+% % contour map of distribution
+% cc=zeros(length(t),length(x));
+% x=[0:0.01:2];
+% for i=1:length(t)
+%     for j=1:length(x)
+%         cc(i,j)=1/sqrt(4*pi*D*t(i))*exp(-(x(j)-v*t(i))^2/(4*D*t(i)));
+%     end
+% end
+% [X,Y]=meshgrid(x,t);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+% might be come in handy later for faster reading of meteorological data:
+% files = dir('textfiles/*.txt');
+% for i=1:length(files)
+%     eval(['load ' files(i).name ' -ascii']);
+% end
 
 
 
