@@ -9,8 +9,8 @@ C_p = 4185;         % specific heat capacity of water [J/kg/K]
 
 % calculate absolute humidity from relative humidity
 theta = T_w - 273.15;                                    % water temperature in centigrades [�C]
-e_sat = 6.111213*exp(17.5043*theta/(241.2 + theta))*100; % vapor pressure at saturation [Pa] = Magnus equation
-e_a_m = (R_H/100)*e_sat;
+e_sat = 6.111213.*exp(17.5043.*theta/(241.2 + theta)).*100; % vapor pressure at saturation [Pa] = Magnus equation
+e_a_m = (R_H./100).*e_sat';
 
 % interpolate the measured data to the current time point
 p=interp1(t_m,p_m,t,'linear','extrap');

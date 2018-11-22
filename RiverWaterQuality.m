@@ -160,9 +160,10 @@ depth_min = 1e-3;    % minimal depth to compute equilibrium depth
 alpha = 0.05;        % albedo [-] value of 0.05 corresponds to ... surface (source:)
 
 % Initial conditions
-T_w0 = 8;                   % initial river water temperature [°C]
+% T_w0 = 8;                   % initial river water temperature [°C]
+T_w0 = [4 6 8 12 16];
 T_w0 = T_w0 + 273.15;       % initial river water temperature [K]
-tspan = [1:tm_n] * 86400;   % Time span of one year in seconds of 363days
+tspan = [1:tm_n].* 86400;   % Time span of one year in seconds of 363days
 
 %% Model
 % interpolation mode
@@ -170,9 +171,11 @@ mode='spline';                      % find reasonable mode.
 
 % Solve ODE 
 % ODE output is a time series of the water temperature
+% for i= 1:5
 [t,T_w] = ode15s(@heatradiationODE, tspan,T_w0,[],...
                   t_m,p_m,T_a_m,R_H,v_w_m,B_m,H_G_m,depth,alpha,mode);
-
+% end
+              
 % Compute with minimal depth => equilibrium temperature
 % minimal depth was set to 1m < why?
 [t,T_e] = ode15s(@heatradiationODE, tspan,T_w0,[],...
