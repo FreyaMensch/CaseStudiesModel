@@ -14,8 +14,8 @@
 %%
 %% MODEL
 %%
-clear all
-close all
+% clear all
+% close all
 
 %% ---------- 1. RIVER GEOMETRY ----------- 
 %% COMMENTS on Geometry
@@ -26,10 +26,10 @@ close all
 
 %% PARAMETERS to be adjusted
 Q = 10;                              % volumetric flux [m³/s]       % eg Neckar in Tübingen ~ 30 m³/s
-n = 0.03;                            % Manning roughness coefficient
+n_man = 0.03;                            % Manning roughness coefficient
 S_river = [0.001 0.002 0.003];       % bottom slope [m/m]
 %S_river = [0.001 0.002 0.004];         % bottom slope [m/m]
-B_0 = [3 3 3];                       % bottom width [m]
+B_0 = [2.5 4 5.5];                       % bottom width [m]
 %B_0 = [2.5 3 4];                       % bottom width [m] 
 s_bank = [1 1 1];                    % slope of river banks [m/m] (dy/dy)
 %s_bank = [1 2 0.5];                    % slope of river banks [m/m] (dy/dy)
@@ -49,9 +49,9 @@ q = zeros(reach_nr,1)';            % creates a vector for specific discharge [m/
 for i=1:reach_nr
     % Manning's equation solved for water depth H:    [QUAL2K maual eq(17)]
     if i == 1
-        H(i)= (((Q*n)^(3/5))*(B_0(i)+2.*H_0*sqrt(s_bank(i).^2+1))^(2/5))/((S_river(i)^(3/10)).*(B_0(i)+s_bank(i).*H_0));
+        H(i)= (((Q*n_man)^(3/5))*(B_0(i)+2.*H_0*sqrt(s_bank(i).^2+1))^(2/5))/((S_river(i)^(3/10)).*(B_0(i)+s_bank(i).*H_0));
     else 
-        H(i)= (((Q*n)^(3/5)).*(B_0(i)+2.*H(i)*sqrt(s_bank(i).^2+1)).^(2/5))/((S_river(i)^(3/10)).*(B_0(i)+s_bank(i).*H(i)));
+        H(i)= (((Q*n_man)^(3/5)).*(B_0(i)+2.*H(i)*sqrt(s_bank(i).^2+1)).^(2/5))/((S_river(i)^(3/10)).*(B_0(i)+s_bank(i).*H(i)));
     end    
 A_c(i) = (B_0(i)+s_bank(i)*H(i))*H(i);  % cross-sectional area between elements [m²] 
 b_s(i) = H(i)/s_bank(i);                % length of water surface over sloped bank [m]
@@ -63,7 +63,7 @@ end
 
 %% time it takes the water from start to end of river
 %t_res = sum(L_reach./q);             % residence time of water parcel in river [seconds]
-t_res = sum(L_reach./q)/3600;        % residence time of water parcel in river [hours]
+t_res = sum(L_reach./q)/3600        % residence time of water parcel in river [hours]
 
 %% -----------------------------------------------------
 %% ------------ 2.TEMPERATURE MODEL --------------------
@@ -87,7 +87,7 @@ Dbulk= (D.*A_c)./dx   ;     % bulk diffusion coefficient
 
 x=dx(1):dx(1):L_reach;
 
-T_in= 295;
+T_in= 285;
 T=(T_in-10).*ones(1,length(x));
 %T = zeros(1,length(x));
 
@@ -119,8 +119,46 @@ T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end));
 % collecting all values in a matrix:
 % t=0:dt(1):te;
 % T_eq(length(x),length(t))=T(x(i))
-end
+ end
 
+
+%% Example Script from Video with comments
+L=0.1;     %wall thickness[m] => length of reach 
+n =10;      %number of sumulation nodes  => nr of cells in each reach
+T0=0;      %initial temperature
+T1s=40;    %surface 1 temperature  => boundary condition (Dirichlet bc) @ beginning of river
+T2s=20;    %surface 2 temperature  => boundary condition (Dirichlet bc) @ end of river
+
+dx= L/n;            %      => distance between the cell centers
+
+alpha=0.01;         %thermal diffusivity    => we have to replace this by parameters for our purpose
+
+t_final=60;         %simulation time [s]
+dt=0.001;           %fixed time step [s]  
+x=dx/2:dx:L-dx/2;   % it can be here instead of dx/2 write just dx => no this does the simulation at the center of each cell and that's what we want!?
+                    % this is the spatial vector
+
+T = ones(n,1)*T0;   % => creates matrix that will be input by calculated values of Temperature values
+dTdt=zeros(n,1);    % => creates matrix that will be input by calculated values of time derivative
+t=0:dt:t_final;     % => created the temporal vector
+
+for j=1:length(t)   % temporal iteration
+    for i= 2:n-1    % spacial iteration
+        dTdt(i)=alpha*(-(T(i)-T(i-1))/dx^2+(T(i+1)-T(i))/dx^2);
+    end
+    dTdt(1)=alpha*(-(T(1)-T1s)/dx^2+(T(2)-T(1))/dx^2);
+    dTdt(n)=alpha*(-(T(n)-T(n-1))/dx^2+(T2s-T(n))/dx^2);
+    T = T+dTdt*dt;
+%     figure(1)
+%     plot(x,T,'linewidth',3)
+%     axis([0 L 0 50])
+%     xlabel(' Distance(m)')
+%     ylabel('Temperature(\circC)')
+%     pause(0.1)
+end
+ 
+ 
+ 
 
 %% 2b. Sources & Sink Terms of Heat Balance -----------------------------
 
@@ -160,9 +198,10 @@ depth_min = 1e-3;    % minimal depth to compute equilibrium depth
 alpha = 0.05;        % albedo [-] value of 0.05 corresponds to ... surface (source:)
 
 % Initial conditions
-% T_w0 = 8;                   % initial river water temperature [°C]
-T_w0 = [4 6 8 12 16];
-T_w0 = T_w0 + 273.15;       % initial river water temperature [K]
+ T_w0 = 1;                   % initial river water temperature [°C]
+% %T_w0 = [4 6 8 12 16];
+ T_w0 = T_w0 + 273.15;       % initial river water temperature [K]
+%T_w0 = ;
 tspan = [1:tm_n].* 86400;   % Time span of one year in seconds of 363days
 
 %% Model
@@ -200,10 +239,10 @@ plot(t/86400,interp1(t_m,T_a_m,t,mode,'extrap'),'k--');
 % plot(t2/86400,T_e,':k')
 hold off
 
-title('River Temperature');
+title('Water temperature in first reach (without advection & dispersion)');
 xlabel('Date');
 ylabel('T_w [C]');
-legend('T_{w}=6K','T_{air}','location','best')    %,'T_{ini}=4K','T_{eq}'
+legend('T_{w}=12C','T_{air}','location','best')    %,'T_{ini}=4K','T_{eq}'
 legend(gca,'boxoff')
 
 figure
