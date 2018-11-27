@@ -25,7 +25,7 @@
 % B_s (width @surface) for Dispersion
 
 %% PARAMETERS to be adjusted
-Q = 10;                              % volumetric flux [m³/s]       % eg Neckar in Tübingen ~ 30 m³/s
+Q = 2;                              % volumetric flux [m³/s]       % eg Neckar in Tübingen ~ 30 m³/s
 n_man = 0.03;                            % Manning roughness coefficient
 S_river = [0.001 0.002 0.003];       % bottom slope [m/m]
 %S_river = [0.001 0.002 0.004];         % bottom slope [m/m]
@@ -63,7 +63,7 @@ end
 
 %% time it takes the water from start to end of river
 %t_res = sum(L_reach./q);             % residence time of water parcel in river [seconds]
-t_res = sum(L_reach./q)/3600        % residence time of water parcel in river [hours]
+t_res = sum(L_reach./q)/3600;        % residence time of water parcel in river [hours]
 
 %% -----------------------------------------------------
 %% ------------ 2.TEMPERATURE MODEL --------------------
@@ -80,7 +80,7 @@ D=(0.011.*(q.^2).*(B_s.^2))./(Hmean.*Vsh);  % i think there is a time missing in
 % Courant number = 1, Neuman number =1/4 :
 dx=(4.*D)./q   ;            
 %dx =20 ;                 % element length fix [m]
-dt = 4.*D./q.^2   ;         % with Courant number = 1 should be =dx/q;
+dt = min(4.*D./q.^2)   ;         % with Courant number = 1 should be =dx/q;
 %dt = 60;                  % time fixed [s]
 
 Dbulk= (D.*A_c)./dx   ;     % bulk diffusion coefficient
@@ -93,10 +93,11 @@ T=(T_in-10).*ones(1,length(x));
 
 te = 2*60*60;               % end time [h]
 
-t=0:dt(1):te;
+t=0:dt:te;
 T_eq=zeros(length(x),length(t));
-  
- for t=0:dt(1):te
+ 
+ for t=0:dt:te
+     
 %========================= ADVECTION ====================================== 
 T(1)= T_in;
 T(2:end)=T(1:end-1);
@@ -106,10 +107,10 @@ Hd=Dbulk(1).*(T(1:end-1)-T(2:end))./(A_c(1).*dx(1));
 Hd =[0 Hd Hd(end)];                     % boundary conditions 
 T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end)); 
 
-% Plot
+% %Plot
 % figure(1)
 % plot(x,T);
-% ylim([280 310])
+% ylim([270 290])
 % % hold on
 % xlabel('x [m]');
 % ylabel('T [K]');
@@ -121,43 +122,6 @@ T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end));
 % T_eq(length(x),length(t))=T(x(i))
  end
 
-
-%% Example Script from Video with comments
-L=0.1;     %wall thickness[m] => length of reach 
-n =10;      %number of sumulation nodes  => nr of cells in each reach
-T0=0;      %initial temperature
-T1s=40;    %surface 1 temperature  => boundary condition (Dirichlet bc) @ beginning of river
-T2s=20;    %surface 2 temperature  => boundary condition (Dirichlet bc) @ end of river
-
-dx= L/n;            %      => distance between the cell centers
-
-alpha=0.01;         %thermal diffusivity    => we have to replace this by parameters for our purpose
-
-t_final=60;         %simulation time [s]
-dt=0.001;           %fixed time step [s]  
-x=dx/2:dx:L-dx/2;   % it can be here instead of dx/2 write just dx => no this does the simulation at the center of each cell and that's what we want!?
-                    % this is the spatial vector
-
-T = ones(n,1)*T0;   % => creates matrix that will be input by calculated values of Temperature values
-dTdt=zeros(n,1);    % => creates matrix that will be input by calculated values of time derivative
-t=0:dt:t_final;     % => created the temporal vector
-
-for j=1:length(t)   % temporal iteration
-    for i= 2:n-1    % spacial iteration
-        dTdt(i)=alpha*(-(T(i)-T(i-1))/dx^2+(T(i+1)-T(i))/dx^2);
-    end
-    dTdt(1)=alpha*(-(T(1)-T1s)/dx^2+(T(2)-T(1))/dx^2);
-    dTdt(n)=alpha*(-(T(n)-T(n-1))/dx^2+(T2s-T(n))/dx^2);
-    T = T+dTdt*dt;
-%     figure(1)
-%     plot(x,T,'linewidth',3)
-%     axis([0 L 0 50])
-%     xlabel(' Distance(m)')
-%     ylabel('Temperature(\circC)')
-%     pause(0.1)
-end
- 
- 
  
 
 %% 2b. Sources & Sink Terms of Heat Balance -----------------------------
