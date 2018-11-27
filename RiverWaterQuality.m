@@ -58,9 +58,8 @@ b_s(i) = H(i)/s_bank(i);                % length of water surface over sloped ba
 B_s(i) = B_0(i) + 2*b_s(i);             % total width of river at water surface [m]
 A_s(i) = B_s(i)*L_reach;                % surface area (water-atmosphere interface) [m²]
 q(i) = Q./A_c(i);                       % specific discharge [m/s]
-V(i)= A_c(i)*L_reach;                   % volume of reach [m³]
+Vreachv(i)= A_c(i)*L_reach;                   % volume of reach [m³]
 end
-
 %% time it takes the water from start to end of river
 %t_res = sum(L_reach./q);             % residence time of water parcel in river [seconds]
 t_res = sum(L_reach./q)/3600;        % residence time of water parcel in river [hours]
@@ -78,38 +77,64 @@ Vsh=sqrt((g*Hmean.^2).*S_river);        % Shear velocity [m/s](QUAL2K.p18)
 D=(0.011.*(q.^2).*(B_s.^2))./(Hmean.*Vsh);  % i think there is a time missing in the denominator? like this D has units of m² but it should be m²/s !?
 
 % Courant number = 1, Neuman number =1/4 :
-dx=(4.*D)./q   ;            
-%dx =20 ;                 % element length fix [m]
+% dx=(4.*D)./q   ;            
+dx =10 ;                 % element length fix [m]
 dt = min(4.*D./q.^2)   ;         % with Courant number = 1 should be =dx/q;
 %dt = 60;                  % time fixed [s]
 
 Dbulk= (D.*A_c)./dx   ;     % bulk diffusion coefficient
 
-x=dx(1):dx(1):L_reach;
+x=0:dx:L_reach ;
+% make vectors for whole river from single reaches
+A_c= repmat(A_c,[(length(x)-1) 1]);
+A_c = A_c(:)';
+H= repmat(H,[(length(x)-1) 1]);
+H = H(:)';
+q= repmat(q,[(length(x)-1) 1]);
+q= q(:)';
+D= repmat(D,[(length(x)-1) 1]);
+D = D(:)';
 
-T_in= 285;
-T=(T_in-10).*ones(1,length(x));
-%T = zeros(1,length(x));
+
+Dnum=q*dx/4 ;  % numerical dispersion (QUAL2K.p18) /4 instead of /2
+Dm=[0 0 0];
+if Dnum<=D
+    Dm=D-Dnum;
+end
+
+Dbulk= (Dm.*A_c)./dx  ;   % bulk diffusion coefficient
 
 te = 2*60*60;               % end time [h]
-
 t=0:dt:te;
+T_in= 285;
+n=L_tot/dx ;
+% T=(T_in-10).*ones(1,length(x));
+T = ones(1,n)*T_in;
 T_eq=zeros(length(x),length(t));
- 
+
+Tw = ones(length(n),length(t));
+dTdt_A = zeros(n,1);
  for t=0:dt:te
-     
+  for  i=2:n-1
 %========================= ADVECTION ====================================== 
-T(1)= T_in;
-T(2:end)=T(1:end-1);
+%  NOT RUNNING YET
+%T(1)= T_in;
+% T(2:end)=T(1:end-1);
+dTdt_A(i)= (Q./A_c.*dx).*(T(i-1)-T(i));
+  end
+dTdt_A(1) = dTdt_A(1);     % boundary condition
+T = T + dTdt*dt;
+Tw(:,t) = T;
     
 %========================= DISPERSION ===================================== 
-Hd=Dbulk(1).*(T(1:end-1)-T(2:end))./(A_c(1).*dx(1));
-Hd =[0 Hd Hd(end)];                     % boundary conditions 
-T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end)); 
+% Hd=Dbulk(1).*(T(1:end-1)-T(2:end))./(A_c(1).*dx(1));
+% Hd =[0 Hd Hd(end)];                     % boundary conditions 
+% T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end)); 
+% 
+% Tw(1:length(T))= T;
 
-% %Plot
-% figure(1)
-% plot(x,T);
+figure(1)
+plot(x,T);
 % ylim([270 290])
 % % hold on
 % xlabel('x [m]');
@@ -122,7 +147,7 @@ T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end));
 % T_eq(length(x),length(t))=T(x(i))
  end
 
- 
+
 
 %% 2b. Sources & Sink Terms of Heat Balance -----------------------------
 
