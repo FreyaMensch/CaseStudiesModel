@@ -121,6 +121,8 @@ q= repmat(q,[(length(x)-1) 1]);
 q= q(:)';
 D= repmat(D,[(length(x)-1) 1]);
 D = D(:)';
+
+
 Dnum=q*dx/4 ;  % numerical dispersion (QUAL2K.p18) /4 instead of /2
 Dm=[0 0 0];
 if Dnum<=D
@@ -130,14 +132,13 @@ end
 Dbulk= (Dm.*A_c)./dx  ;   % bulk diffusion coefficient
 
 te = 2*60*60;               % end time [h]
-
 t=0:dt:te;
 T_in= 285;
 n=L_tot/dx ;
 % T=(T_in-10).*ones(1,length(x));
 T = ones(1,n)*T_in;
 T_eq=zeros(length(x),length(t));
- 
+
 Tw = ones(length(t),length(n));
 dTdt_A = zeros(1,n);
 %dTdt_R = zeros(length(V),1);
@@ -145,6 +146,10 @@ dTdt_A = zeros(1,n);
 dt = 6*3600;    %for t=0:dt:te% dt has to be the nr of hours that the meteorological data is averaged over (6 hours in the present case)
 
 for t=0:dt:te             
+
+Tw = ones(length(n),length(t));
+dTdt_A = zeros(n,1);
+ for t=0:dt:te
   for  i=2:n-1
 %========================= ADVECTION ====================================== 
 %  NOT RUNNING YET
@@ -163,7 +168,6 @@ end
 % T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end)); 
 % 
 % Tw(1:length(T))= T;
-
 
 
 %========================= RADIATION ===================================== 
@@ -217,6 +221,7 @@ end
 
 % end
  
+
 
 %% 2b. Sources & Sink Terms of Heat Balance -----------------------------
 
