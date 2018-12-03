@@ -25,7 +25,7 @@
 % B_s (width @surface) for Dispersion
 
 %% PARAMETERS to be adjusted
-Q = 2;                              % volumetric flux [m³/s]       % eg Neckar in Tübingen ~ 30 m³/s
+Q = 0.1;                              % volumetric flux [m³/s]       % eg Neckar in Tübingen ~ 30 m³/s
 n_man = 0.03;                            % Manning roughness coefficient
 S_river = [0.001 0.002 0.003];       % bottom slope [m/m]
 %S_river = [0.001 0.002 0.004];         % bottom slope [m/m]
@@ -58,7 +58,7 @@ b_s(i) = H(i)/s_bank(i);                % length of water surface over sloped ba
 B_s(i) = B_0(i) + 2*b_s(i);             % total width of river at water surface [m]
 A_s(i) = B_s(i)*L_reach;                % surface area (water-atmosphere interface) [m²]
 q(i) = Q./A_c(i);                       % specific discharge [m/s]
-Vreachv(i)= A_c(i)*L_reach;                   % volume of reach [m³]
+Vreach(i)= A_c(i)*L_reach;                   % volume of reach [m³]
 end
 %% time it takes the water from start to end of river
 %t_res = sum(L_reach./q);             % residence time of water parcel in river [seconds]
@@ -78,26 +78,25 @@ D=(0.011.*(q.^2).*(B_s.^2))./(Hmean.*Vsh);  % i think there is a time missing in
 
 % Courant number = 1, Neuman number =1/4 :
 % dx=(4.*D)./q   ;            
-dx =10 ;                 % element length fix [m]
-dt = min(4.*D./q.^2)   ;         % with Courant number = 1 should be =dx/q;
-%dt = 60;                  % time fixed [s]
+dx=50;
+n = L_tot/dx ;                 % element length fix [m]
+% dt = min(4.*D./q.^2)   ;         % with Courant number = 1 should be =dx/q;
+dt=60;                % time fixed [s]
+% Dbulk= (D.*A_c)./dx   ;     % bulk diffusion coefficient
 
-Dbulk= (D.*A_c)./dx   ;     % bulk diffusion coefficient
-
-x=0:dx:L_reach ;
+x=dx/2:dx:L_reach-dx/2 ;
 % make vectors for whole river from single reaches
-A_c= repmat(A_c,[(length(x)-1) 1]);
+A_c= repmat(A_c,[(length(x)) 1]);
 A_c = A_c(:)';
-H= repmat(H,[(length(x)-1) 1]);
+H= repmat(H,[(length(x)) 1]);
 H = H(:)';
-q= repmat(q,[(length(x)-1) 1]);
+q= repmat(q,[(length(x)) 1]);
 q= q(:)';
-D= repmat(D,[(length(x)-1) 1]);
+D= repmat(D,[(length(x)) 1]);
 D = D(:)';
 
-
-Dnum=q*dx/4 ;  % numerical dispersion (QUAL2K.p18) /4 instead of /2
-Dm=[0 0 0];
+Dnum=q*dx/2 ;  % numerical dispersion (QUAL2K.p18) 
+Dm=zeros(1,length(D));
 if Dnum<=D
     Dm=D-Dnum;
 end
@@ -106,41 +105,39 @@ Dbulk= (Dm.*A_c)./dx  ;   % bulk diffusion coefficient
 
 te = 2*60*60;               % end time [h]
 t=0:dt:te;
-T_in= 285;
-n=L_tot/dx ;
-% T=(T_in-10).*ones(1,length(x));
-T = ones(1,n)*T_in;
-T_eq=zeros(length(x),length(t));
-
-Tw = ones(length(n),length(t));
-dTdt_A = zeros(n,1);
- for t=0:dt:te
-  for  i=2:n-1
+ T_in = 287;
+% n=L_tot/dx ;
+% T = 50*ones(1,n);
+ T = ones(1,n)*285;
+ Tw = zeros(length(t),length(n));
+ dTdt_A = zeros(1,n);
+ dTdt_D = zeros(1,n);
+ 
+ for j=1:length(t)
+  for  i=2:n
 %========================= ADVECTION ====================================== 
-%  NOT RUNNING YET
-%T(1)= T_in;
-% T(2:end)=T(1:end-1);
-dTdt_A(i)= (Q./A_c.*dx).*(T(i-1)-T(i));
+dTdt_A(i)=(q(i)./dx).*(T(i-1)-T(i));
   end
-dTdt_A(1) = dTdt_A(1);     % boundary condition
-T = T + dTdt*dt;
-Tw(:,t) = T;
-    
-%========================= DISPERSION ===================================== 
-% Hd=Dbulk(1).*(T(1:end-1)-T(2:end))./(A_c(1).*dx(1));
-% Hd =[0 Hd Hd(end)];                     % boundary conditions 
-% T = T+ dt(1).*(Hd(1:end-1)-Hd(2:end)); 
-% 
-% Tw(1:length(T))= T;
+dTdt_A(1)=(q(1)./dx).*(T_in-T(1));
 
-figure(1)
-plot(x,T);
-% ylim([270 290])
-% % hold on
+
+  for  i=2:n-1
+%========================= DISPERSION ===================================== 
+dTdt_D(i)=(Dbulk(i-1)./(A_c(i)*dx)).*(T(i-1)-T(i)) + (Dbulk(i)./(A_c(i)*dx)).*(T(i+1)-T(i)) ;
+  end
+dTdt_D(1)=0 ;  %%%% ASK ABOUT THESE!!!
+dTdt_D(n)=0 ;
+
+T = T + dTdt_A*dt + dTdt_D*dt ;
+ 
+figure (1)
+plot (T)
+ylim([284 288])
 % xlabel('x [m]');
 % ylabel('T [K]');
-% title(sprintf('Temperature, t=%6.1f h',t/3600));
-% drawnow
+% hold on
+%  title(sprintf('Temperature, t=%6.1f h',t/3600));
+%  drawnow
 
 % collecting all values in a matrix:
 % t=0:dt(1):te;
