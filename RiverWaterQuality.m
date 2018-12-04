@@ -142,7 +142,7 @@ t=0:dt:te;
 T_in = 284;
 % n=L_tot/dx ;
 T = ones(1,n)*283;
-%  Tw = zeros(length(t),length(n));
+Tw = zeros(length(t),n);
  dTdt_A = zeros(1,n);
  dTdt_D = zeros(1,n);
  dTdt_S = zeros(1,n);
@@ -172,7 +172,8 @@ W = rho_w*C_p*Q_s*T_s   ;
 end
 %========================= SUM OF ALL =====================================
 T = T + dTdt_A*dt  + dTdt_D*dt + dTdt_S*dt;
- 
+
+Tw(j,:) = T;
 
 figure (1)
 plot (T)
