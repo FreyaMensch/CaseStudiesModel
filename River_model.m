@@ -88,7 +88,7 @@ Dbulk= (Dm.*A_c)./dx  ;   % bulk diffusion coefficient
 
 %§§§§§§§§§§§§§§§§§§§§ TIME DISCRETIZATION §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 dt = 60;                 % time step [s]
-te = 180*24*60*60;        % end time [s]
+te = 60*24*60*60;        % end time [s]
 t = 0:dt:te;
 %§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 
@@ -156,8 +156,8 @@ Tw_eq(j,:) = T_eq;
 end
 
 %% plot with fixed time
-t1_fix=800;
-t2_fix=250000;
+t1_fix=800;      % index of Tw rows. Time in seconds will be t1_fix*dt
+t2_fix=25000;    % index of Tw rows
 figure (1)
 plot (x/1000,Tw(t1_fix,:)-273.15,'r'), hold on
 plot (x/1000,Tw(t2_fix,:)-273.15,'g')
@@ -170,7 +170,7 @@ title('Space variation of Temperature at fixed time')
 hold off
 
 %% plot with fixed distance (year)
-x1_fix = 200;       % distance you want to show, in meters
+x1_fix = 1000;       % distance you want to show, in meters
 x2_fix = 30000;       % second distance you want to show, in meters
 figure (2)
 plot (t/24/3600,Tw(:,x1_fix/dx)-273.15,'r'), hold on
